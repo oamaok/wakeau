@@ -1,0 +1,12 @@
+{
+    "name": "oamaok/wakeau",
+    "require": {
+        "mustache/mustache": "^2.10"
+    },
+    "authors": [
+        {
+            "name": "Teemu Pääkkönen",
+            "email": "oamaok@gmail.com"
+        }
+    ]
+}

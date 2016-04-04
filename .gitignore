@@ -1,2 +1,7 @@
 config.ini
 node_modules
+.sass-cache
+build
+web/assets
+/vendor/
+.lock

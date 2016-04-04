@@ -30,4 +30,9 @@ class Database
     $statement->execute(array_slice($args, 1));
     return $statement->fetchAll();
   }
+
+  public static function now ()
+  {
+    return date("c");
+  }
 }
