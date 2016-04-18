@@ -1,8 +1,10 @@
 <?php
 
+require_once __DIR__ . '/../app/Config.php';
 require_once __DIR__ . '/../db/Database.php';
+require_once __DIR__ . '/Model.php';
 
-class Session
+class Session implements Model
 {
   public $access_token, $user, $created_at, $last_active, $ttl;
 
@@ -11,33 +13,41 @@ class Session
   public static function from_array ($arr)
   {
     $session = new Session;
-    $session->access_token = self::create_token();
-    $session->user = $user->id;
-    $session->ttl = $ttl;
-    $session->created_at = Database::now();
-    $session->last_active = Database::now();
-  }
-
-  public static function create_token ()
-  {
-    return bin2hex(openssl_random_pseudo_bytes(16));
-  }
-
-  public static function create_for_user ($user, $ttl = 60 * 60 * 24 * 7)
-  {
-    $session = new Session;
-    $session->access_token = self::create_token();
-    $session->user = $user->id;
-    $session->ttl = $ttl;
-    $session->created_at = Database::now();
-    $session->last_active = Database::now();
-
-    var_dump(Database::instance()->query('INSERT INTO sessions (access_token, user, ttl, create_at, last_active) VALUES (?, ?, ?, NOW(), NOW()) RETURNING id', $session->access_token, $session->user, $session->ttl));
+    $session->access_token = $arr['access_token'];
+    $session->user = $arr['user'];
+    $session->ttl = $arr['ttl'];
+    $session->created_at = $arr['created_at'];
+    $session->last_active = $arr['last_active'];
 
     return $session;
   }
+  
+  public static function find_by_id ($id) {}
 
-  public static function get_by_token ($token)
+  public static function create_token ()
+  {
+    return bin2hex(openssl_random_pseudo_bytes(32));
+  }
+
+  public static function create_for_user ($user_id, $ttl = null)
+  {
+    if(!$ttl)
+      $ttl = Config::get('session')['ttl'];
+
+    $session = new Session;
+    $session->access_token = self::create_token();
+    $session->user = $user_id;
+    $session->ttl = $ttl;
+    $session->created_at = Database::now();
+    $session->last_active = Database::now();
+
+    $result = Database::instance()->query('INSERT INTO sessions (access_token, "user", ttl, created_at, last_active) VALUES (?, ?, ?, NOW(), NOW()) RETURNING *', $session->access_token, $session->user, $session->ttl);
+    
+    $session->id = $result[0]['id'];
+    return $session;
+  }
+
+  public static function find_by_token ($token)
   {
     $result = Database::instance()->query('SELECT * FROM sessions WHERE access_token = ? AND now () - last_active < ttl * interval \'1 second\'', $token);
     if(!count($result))
@@ -48,7 +58,11 @@ class Session
 
   public static function get_current ()
   {
-    
+    if(!isset($_COOKIE[Config::get('session')['cookie']]))
+      return null;
+
+    $token = $_COOKIE[Config::get('session')['cookie']];
+    return Session::find_by_token($token);
   }
 
   public function get_user ()

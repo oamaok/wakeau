@@ -13,6 +13,12 @@ class Renderer
     self::$mustache = new Mustache_Engine;
   }
 
+  public static function json ($obj)
+  {
+    header('Content-type: text/json');
+    echo json_encode($obj);
+  }
+
 	public static function render ($template, $data = null)
 	{
     if(!self::$mustache)
